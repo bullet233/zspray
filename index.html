@@ -142,13 +142,22 @@
       <span class="unit">gallons</span>
     </div>
 
+    <div class="section-label" style="margin-top:14px">Fill amount</div>
+    <div class="row">
+      <label>Gallons this fill</label>
+      <input type="number" id="mixFill" value="15" min="0.5" step="0.5" oninput="calcMix()">
+      <span class="unit">gallons</span>
+      <button class="fill-full-btn" onclick="resetFillToFull()" title="Reset to full tank">Full</button>
+    </div>
+    <div class="info" id="fill-info" style="display:none"></div>
+
     <div class="info" id="mix-tank-info"></div>
 
     <div class="grid" style="margin-top:12px">
       <div class="metric"><div class="ml">Output Rate</div><div class="mv" id="mix-r-rate">—</div><div class="mu">gal / 1,000 sq ft</div></div>
-      <div class="metric"><div class="ml">Tank Size</div><div class="mv" id="mix-r-tank">—</div><div class="mu">gallons</div></div>
-      <div class="metric"><div class="ml">Coverage</div><div class="mv" id="mix-r-cov">—</div><div class="mu">sq ft per tank</div></div>
-      <div class="metric"><div class="ml">Total Product</div><div class="mv" id="mix-r-prod">—</div><div class="mu">oz per tank</div></div>
+      <div class="metric"><div class="ml">Fill Amount</div><div class="mv" id="mix-r-fill">—</div><div class="mu">gallons</div></div>
+      <div class="metric"><div class="ml">Coverage</div><div class="mv" id="mix-r-cov">—</div><div class="mu">sq ft this fill</div></div>
+      <div class="metric"><div class="ml">Total Product</div><div class="mv" id="mix-r-prod">—</div><div class="mu">oz this fill</div></div>
     </div>
   </div>
 

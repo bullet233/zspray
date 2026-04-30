@@ -116,6 +116,9 @@ input[type="number"] { width: 90px; }
 .preset-item .pi-del:hover { background: #fef2f2; border-color: #fca5a5; color: var(--error); }
 .preset-save-btn { padding: 10px 16px; font-size: 13px; font-weight: 700; font-family: inherit; border: none; border-radius: var(--radius-sm); background: var(--success); color: #fff; cursor: pointer; transition: all var(--tr); white-space: nowrap; }
 .preset-save-btn:hover { background: #047857; }
+.fill-full-btn { padding: 8px 14px; font-size: 13px; font-weight: 600; font-family: inherit; border: 1.5px solid var(--primary); border-radius: var(--radius-sm); background: var(--primary-50); color: var(--primary); cursor: pointer; transition: all var(--tr); white-space: nowrap; }
+.fill-full-btn:hover { background: var(--primary); color: #fff; }
+.fill-partial-note { font-size: 12px; font-weight: 600; color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn-border); padding: 6px 10px; border-radius: var(--radius-sm); margin: 4px 0 8px; }
 
 /* Status Banner */
 .status-banner { border-radius: var(--radius); padding: 18px 20px; margin-top: 16px; display: none; animation: fadeIn 0.3s ease; }

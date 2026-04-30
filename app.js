@@ -305,9 +305,21 @@ function setMixTank(v) {
       (v === 10 && k === '10') || (v === 15 && k === '15') || (v === 20 && k === '20') || (v === 'c' && k === 'c'));
   });
   document.getElementById('mix-custom-wrap').style.display = v === 'c' ? 'flex' : 'none';
+  // Auto-sync fill to full tank when tank size changes
+  const fillInput = document.getElementById('mixFill');
+  if (!fillInput.dataset.manual) {
+    fillInput.value = getMixTank();
+  }
   calcMix();
 }
 function getMixTank() { return mixTankMode === 'c' ? (parseFloat(document.getElementById('mixCustomTank').value) || 15) : mixTankMode; }
+function getMixFill() { return parseFloat(document.getElementById('mixFill').value) || getMixTank(); }
+function resetFillToFull() {
+  const fillInput = document.getElementById('mixFill');
+  fillInput.value = getMixTank();
+  delete fillInput.dataset.manual;
+  calcMix();
+}
 
 function addMixProduct(name, rate, unit, form) {
   const id = 'mp' + (mixProdId++);
@@ -354,13 +366,31 @@ function getMixProducts() {
 function calcMix() {
   const rate = parseFloat(document.getElementById('mixRate').value) || 1;
   const tank = getMixTank();
+  const fill = getMixFill();
   const products = getMixProducts();
-  const coverageSqFt = rate > 0 ? Math.round((tank / rate) * 1000) : 0;
+  const isPartial = fill < tank;
+  const coverageSqFt = rate > 0 ? Math.round((fill / rate) * 1000) : 0;
+
+  // Mark fill as manual if user changed it
+  const fillInput = document.getElementById('mixFill');
+  if (parseFloat(fillInput.value) !== tank && document.activeElement === fillInput) {
+    fillInput.dataset.manual = '1';
+  }
+
+  // Partial fill info
+  const fillInfo = document.getElementById('fill-info');
+  if (isPartial) {
+    fillInfo.style.display = 'block';
+    fillInfo.className = 'fill-partial-note';
+    fillInfo.textContent = '⚡ Partial fill: ' + fill + ' of ' + tank + ' gal (' + Math.round(fill/tank*100) + '%) — products scaled down';
+  } else {
+    fillInfo.style.display = 'none';
+  }
 
   document.getElementById('mix-cov').textContent = coverageSqFt.toLocaleString() + ' sq ft';
-  document.getElementById('mix-tank-info').textContent = tank + ' gal tank at ' + rate + ' gal/1k = ' + coverageSqFt.toLocaleString() + ' sq ft coverage';
+  document.getElementById('mix-tank-info').textContent = fill + ' gal ' + (isPartial ? '(partial) ' : '') + 'at ' + rate + ' gal/1k = ' + coverageSqFt.toLocaleString() + ' sq ft coverage';
 
-  // Calculate product amounts
+  // Calculate product amounts based on fill, not full tank
   let prodDetails = [];
   let totalProdOz = 0;
   products.forEach(p => {
@@ -368,7 +398,7 @@ function calcMix() {
     if (p.unit === 'oz_per_k') {
       actual = (coverageSqFt / 1000) * p.rate;
     } else {
-      actual = tank * p.rate;
+      actual = fill * p.rate;
     }
     actual = Math.round(actual * 10) / 10;
     totalProdOz += actual;
@@ -377,7 +407,7 @@ function calcMix() {
 
   // Results grid
   document.getElementById('mix-r-rate').textContent = rate.toFixed(3);
-  document.getElementById('mix-r-tank').textContent = tank;
+  document.getElementById('mix-r-fill').textContent = fill;
   document.getElementById('mix-r-cov').textContent = coverageSqFt.toLocaleString();
   document.getElementById('mix-r-prod').textContent = totalProdOz > 0 ? totalProdOz.toFixed(1) : '—';
 
@@ -395,10 +425,11 @@ function calcMix() {
     const dryProds = fullList.filter(p => p.form === 'WP' || p.form === 'DF');
     const totalLiquidOz = liquidProds.reduce((a, p) => a + p.actual, 0);
     const totalLiquidGal = totalLiquidOz / 128;
-    const initialFillGal = Math.max(tank * 0.5, tank - totalLiquidGal - 1);
+    const initialFillGal = Math.max(fill * 0.5, fill - totalLiquidGal - 1);
 
-    let summary = '<strong>Final tank volume:</strong> ' + tank + ' gal &nbsp;|&nbsp; <strong>Total product:</strong> ' + totalProdOz.toFixed(1) + ' oz (' + totalLiquidGal.toFixed(2) + ' gal liquid)<br>';
-    summary += '<strong>Initial water fill:</strong> ~' + initialFillGal.toFixed(0) + ' gal &nbsp;|&nbsp; then add products &nbsp;|&nbsp; <strong>Top off to ' + tank + ' gal</strong>';
+    const partialLabel = isPartial ? ' (partial fill)' : '';
+    let summary = '<strong>Fill volume:</strong> ' + fill + ' gal' + partialLabel + ' &nbsp;|&nbsp; <strong>Total product:</strong> ' + totalProdOz.toFixed(1) + ' oz (' + totalLiquidGal.toFixed(2) + ' gal liquid)<br>';
+    summary += '<strong>Initial water fill:</strong> ~' + initialFillGal.toFixed(0) + ' gal &nbsp;|&nbsp; then add products &nbsp;|&nbsp; <strong>Top off to ' + fill + ' gal</strong>';
     document.getElementById('mix-summary').innerHTML = summary;
 
     let steps = '', stepNum = 1;
@@ -418,7 +449,7 @@ function calcMix() {
       steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text">Add <em>' + formNames[f] + '</em>: ' + prodList + '.' + note + '</div></div>';
     });
 
-    steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text">Top off with water to exactly <strong>' + tank + ' gallons</strong>.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text">Top off with water to exactly <strong>' + fill + ' gallons</strong>.</div></div>';
     steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text">Continue agitating for 2-3 minutes before spraying. Keep agitation on while spraying.</div></div>';
     document.getElementById('mix-steps').innerHTML = steps;
 
@@ -429,12 +460,12 @@ function calcMix() {
       prodHTML += di(p.name, p.actual + ' oz', rateLabel);
     });
     document.getElementById('mix-prod-grid').innerHTML =
-      di('Total product', totalProdOz.toFixed(1) + ' oz', 'into ' + tank + ' gal water', true) + prodHTML;
+      di('Total product', totalProdOz.toFixed(1) + ' oz', 'into ' + fill + ' gal water', true) + prodHTML;
 
     // Warnings
     const warnEl = document.getElementById('mix-warning');
     let warnings = [];
-    const productPct = (totalProdOz / (tank * 128)) * 100;
+    const productPct = (totalProdOz / (fill * 128)) * 100;
     if (productPct > 10) warnings.push('⚠ Products make up ' + productPct.toFixed(1) + '% of tank volume — high concentration may cause mixing issues.');
     if (dryProds.length > 0 && liquidProds.some(p => p.form === 'EC')) warnings.push('⚠ Wettable/dry powders + emulsifiables in same tank — check label for compatibility, do a jar test first.');
     if (initialFillGal < tank * 0.4) warnings.push('⚠ Heavy product load — consider pre-mixing dry products in a separate bucket.');
@@ -467,6 +498,8 @@ function saveState() {
       mixRateManual: document.getElementById('mixRate').dataset.manual || '',
       mixTankMode,
       mixCustomTank: document.getElementById('mixCustomTank').value,
+      mixFill: document.getElementById('mixFill').value,
+      mixFillManual: document.getElementById('mixFill').dataset.manual || '',
       mixProducts: mixRows.map(r => ({
         name: r.querySelector('.pname').value,
         rate: r.querySelector('.prate').value,
@@ -493,6 +526,8 @@ function loadState() {
     if (d.mixRate) document.getElementById('mixRate').value = d.mixRate;
     if (d.mixRateManual) document.getElementById('mixRate').dataset.manual = d.mixRateManual;
     if (d.mixCustomTank) document.getElementById('mixCustomTank').value = d.mixCustomTank;
+    if (d.mixFill) document.getElementById('mixFill').value = d.mixFill;
+    if (d.mixFillManual) document.getElementById('mixFill').dataset.manual = d.mixFillManual;
 
     // Build nozzle inputs then set values
     updateNozzles();
