@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Z-Spray — Calibration & Tank Mix</title>
+<meta name="description" content="Liquid spray calibration and tank mixing calculator for Z-Spray operators">
+<meta name="theme-color" content="#1e40af">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Z-Spray Cal">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Header + Tabs -->
+<div class="app-header">
+  <div class="app-title">Z-Spray Intermediate</div>
+  <div class="app-subtitle">Liquid calibration &amp; tank mixing</div>
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="cal" onclick="switchTab('cal')">⚙ Calibration</button>
+    <button class="tab-btn" data-tab="mix" onclick="switchTab('mix')">🧪 Tank Mix</button>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- ═══════════════════════ CALIBRATION TAB ═══════════════════════ -->
+<div id="cal" class="tab-panel active">
+
+  <div class="card">
+    <div class="badge b1">Step 1 — Nozzle Setup</div>
+    <div class="row">
+      <label>Number of nozzles</label>
+      <select id="nozzleCount" onchange="updateNozzles()">
+        <option value="2">2</option><option value="3">3</option><option value="4" selected>4</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Nozzle spacing</label>
+      <input type="number" id="spacing" value="20" min="1" step="1" oninput="calcCal()">
+      <span class="unit">inches apart</span>
+    </div>
+    <div class="info" id="swath-line"></div>
+    <div class="sub" id="swath-detail"></div>
+  </div>
+
+  <div class="card">
+    <div class="badge b2">Step 2 — Travel Speed</div>
+    <div class="callout">Mark off <strong id="pass-dist">—</strong> ft — this is 1,000 sq ft at your swath width.<br>Drive at your normal working speed and record the distance and time.</div>
+    <div class="row">
+      <label>Distance traveled</label>
+      <input type="number" id="distFt" value="150" min="10" step="1" oninput="calcCal()">
+      <span class="unit">feet</span>
+    </div>
+    <div class="row">
+      <label>Time to travel that distance</label>
+      <input type="number" id="timeSec" value="34" min="1" step="1" oninput="calcCal()">
+      <span class="unit">seconds</span>
+    </div>
+    <div class="info" id="speed-display"></div>
+  </div>
+
+  <div class="card">
+    <div class="badge b3">Step 3 — Catch Test</div>
+    <p class="desc">Catch each nozzle <strong>separately</strong> for exactly <strong id="catch-sec">—</strong> seconds — same time as Step 2. Enter ounces per nozzle.</p>
+    <div class="row" style="align-items:flex-start">
+      <label style="padding-top:6px">Oz per nozzle</label>
+      <div class="noz-wrap" id="nozzle-inputs"></div>
+    </div>
+    <div class="warn" id="warn-uneven">⚠ Nozzles differ by more than 15% — check for clogs or worn tips</div>
+    <div class="info" id="total-caught"></div>
+  </div>
+
+  <div class="card">
+    <div class="badge b4">Step 4 — Target & Tank</div>
+    <div class="row">
+      <label>Target output rate</label>
+      <input type="number" id="target" value="1" min="0.1" step="0.25" oninput="calcCal()">
+      <span class="unit">gal / 1,000 sq ft</span>
+    </div>
+    <div class="section-label">Tank size</div>
+    <div class="tank-toggle">
+      <button id="ct-10" onclick="setCalTank(10)">10 gal</button>
+      <button id="ct-15" class="active" onclick="setCalTank(15)">15 gal</button>
+      <button id="ct-20" onclick="setCalTank(20)">20 gal</button>
+      <button id="ct-c" onclick="setCalTank('c')">Custom</button>
+    </div>
+    <div class="custom-tank-wrap" id="cal-custom-wrap">
+      <input type="number" id="calCustomTank" value="35" min="1" step="1" oninput="calcCal()">
+      <span class="unit">gallons</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="badge br">Results</div>
+    <div class="grid">
+      <div class="metric"><div class="ml">Ground Speed</div><div class="mv" id="r-speed">—</div><div class="mu">MPH</div></div>
+      <div class="metric"><div class="ml">Effective Swath</div><div class="mv" id="r-swath">—</div><div class="mu">feet</div></div>
+      <div class="metric"><div class="ml">Total Caught</div><div class="mv" id="r-oz">—</div><div class="mu">oz total</div></div>
+      <div class="metric"><div class="ml">Actual Output</div><div class="mv" id="r-gal">—</div><div class="mu">gal / 1,000 sq ft</div></div>
+      <div class="metric"><div class="ml">Coverage / Tank</div><div class="mv" id="r-cov">—</div><div class="mu">sq ft</div></div>
+    </div>
+
+    <div id="status-banner" class="status-banner">
+      <div class="status-title" id="s-title"></div>
+      <div class="status-body" id="s-body"></div>
+      <div class="dgrid" id="s-grid"></div>
+    </div>
+
+    <div class="formula" id="formula"></div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════ TANK MIX TAB ═══════════════════════ -->
+<div id="mix" class="tab-panel">
+
+  <div class="card">
+    <div class="badge bm">Setup</div>
+    <div id="sync-badge" class="sync-badge manual"><span class="sync-dot"></span> Manual entry</div>
+
+    <div class="row">
+      <label>Output rate</label>
+      <input type="number" id="mixRate" value="1" min="0.1" step="0.001" oninput="onMixRateChange()">
+      <span class="unit">gal / 1,000 sq ft</span>
+    </div>
+
+    <div class="section-label">Tank size</div>
+    <div class="tank-toggle">
+      <button id="mt-10" onclick="setMixTank(10)">10 gal</button>
+      <button id="mt-15" class="active" onclick="setMixTank(15)">15 gal</button>
+      <button id="mt-20" onclick="setMixTank(20)">20 gal</button>
+      <button id="mt-c" onclick="setMixTank('c')">Custom</button>
+    </div>
+    <div class="custom-tank-wrap" id="mix-custom-wrap">
+      <input type="number" id="mixCustomTank" value="35" min="1" step="1" oninput="calcMix()">
+      <span class="unit">gallons</span>
+    </div>
+
+    <div class="info" id="mix-tank-info"></div>
+
+    <div class="grid" style="margin-top:12px">
+      <div class="metric"><div class="ml">Output Rate</div><div class="mv" id="mix-r-rate">—</div><div class="mu">gal / 1,000 sq ft</div></div>
+      <div class="metric"><div class="ml">Tank Size</div><div class="mv" id="mix-r-tank">—</div><div class="mu">gallons</div></div>
+      <div class="metric"><div class="ml">Coverage</div><div class="mv" id="mix-r-cov">—</div><div class="mu">sq ft per tank</div></div>
+      <div class="metric"><div class="ml">Total Product</div><div class="mv" id="mix-r-prod">—</div><div class="mu">oz per tank</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="badge bm">Products</div>
+    <p class="desc">Add from your saved presets or enter a custom product. Mixing order follows W-A-L-E-S.</p>
+
+    <!-- Preset Dropdown -->
+    <div class="preset-bar">
+      <select id="preset-select" class="preset-select">
+        <option value="">— Select a saved product —</option>
+      </select>
+      <button class="preset-add-btn" onclick="addFromPreset()" title="Add selected preset to tank">+ Add</button>
+      <button class="preset-manage-btn" onclick="togglePresetManager()" title="Manage saved products" id="manage-btn">⚙</button>
+    </div>
+
+    <!-- Preset Manager (hidden by default) -->
+    <div id="preset-manager" class="preset-manager" style="display:none">
+      <div class="preset-manager-header">
+        <span class="section-label" style="margin:0">Saved Products</span>
+        <button class="preset-manage-btn" onclick="togglePresetManager()" title="Close">✕</button>
+      </div>
+      <div id="preset-list"></div>
+      <div class="preset-add-form">
+        <div class="section-label" style="margin-top:12px">Add New Preset</div>
+        <div class="prod-row" style="margin-bottom:0">
+          <input type="text" class="pname" id="new-preset-name" placeholder="Product name">
+          <input type="number" class="prate" id="new-preset-rate" value="1" min="0" step="0.25">
+          <select class="punit" id="new-preset-unit">
+            <option value="oz_per_k">oz / 1,000 sqft</option>
+            <option value="oz_per_gal">oz / gal</option>
+          </select>
+          <select class="pform" id="new-preset-form">
+            <option value="WP">Wettable Powder</option>
+            <option value="DF">Dry Flowable</option>
+            <option value="L" selected>Liquid / SC</option>
+            <option value="EC">Emulsifiable</option>
+            <option value="SURF">Surfactant / Adj</option>
+          </select>
+          <button class="preset-save-btn" onclick="saveNewPreset()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="mix-products"></div>
+    <button class="btn-add" onclick="addMixProduct()">+ Add blank product</button>
+  </div>
+
+  <div class="card" id="mix-results-card" style="display:none">
+    <div class="badge bm">Product Amounts</div>
+    <div class="info" id="mix-cov"></div>
+    <div class="dgrid" id="mix-prod-grid"></div>
+  </div>
+
+  <div id="mix-panel" class="mixing-panel" style="display:none">
+    <div class="mixing-title">📋 Tank Mixing Instructions</div>
+    <div class="mixing-summary" id="mix-summary"></div>
+    <div id="mix-steps"></div>
+    <div class="mixing-warning" id="mix-warning"></div>
+  </div>
+
+</div>
+
+</div><!-- /content -->
+
+<script src="app.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
