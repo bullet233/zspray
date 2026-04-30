@@ -219,6 +219,33 @@
     <div class="mixing-warning" id="mix-warning"></div>
   </div>
 
+  <!-- Backpack / Transfer Dilution -->
+  <div class="card">
+    <div class="badge b2">Backpack Transfer</div>
+    <p class="desc">Transfer Z-Spray tank mix to a backpack sprayer running at a different rate. Calculates how much mix to pull and how much water to add.</p>
+
+    <div class="row">
+      <label>Z-Spray mix rate</label>
+      <input type="number" id="bp-source-rate" value="0.5" min="0.1" step="0.1" oninput="calcDilution()">
+      <span class="unit">gal / 1,000 sq ft</span>
+    </div>
+    <div class="row">
+      <label>Backpack output rate</label>
+      <input type="number" id="bp-target-rate" value="1" min="0.1" step="0.1" oninput="calcDilution()">
+      <span class="unit">gal / 1,000 sq ft</span>
+    </div>
+    <div class="row">
+      <label>Backpack fill volume</label>
+      <input type="number" id="bp-fill" value="4" min="0.5" step="0.5" oninput="calcDilution()">
+      <span class="unit">gallons total</span>
+    </div>
+
+    <div id="bp-results" class="dilution-results" style="display:none">
+      <div class="dgrid" id="bp-grid"></div>
+      <div class="dilution-steps" id="bp-steps"></div>
+    </div>
+  </div>
+
 </div>
 
 </div><!-- /content -->

@@ -120,6 +120,10 @@ input[type="number"] { width: 90px; }
 .fill-full-btn:hover { background: var(--primary); color: #fff; }
 .fill-partial-note { font-size: 12px; font-weight: 600; color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn-border); padding: 6px 10px; border-radius: var(--radius-sm); margin: 4px 0 8px; }
 
+/* Dilution */
+.dilution-results { margin-top: 14px; padding: 14px 16px; background: linear-gradient(135deg, #faf5ff, #ede9fe); border: 1.5px solid #c4b5fd; border-radius: var(--radius); animation: fadeIn 0.3s ease; }
+.dilution-steps { margin-top: 12px; }
+
 /* Status Banner */
 .status-banner { border-radius: var(--radius); padding: 18px 20px; margin-top: 16px; display: none; animation: fadeIn 0.3s ease; }
 .status-banner.good { background: var(--success-bg); border: 1.5px solid var(--success-border); }

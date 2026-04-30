@@ -476,6 +476,82 @@ function calcMix() {
     if (mixResultsCard) mixResultsCard.style.display = 'none';
     document.getElementById('mix-prod-grid').innerHTML = '';
   }
+  // Sync backpack source rate from current mix rate
+  document.getElementById('bp-source-rate').value = rate;
+  calcDilution();
+  saveState();
+}
+
+// ─── Backpack Dilution ───
+function calcDilution() {
+  const sourceRate = parseFloat(document.getElementById('bp-source-rate').value) || 0.5;
+  const targetRate = parseFloat(document.getElementById('bp-target-rate').value) || 1;
+  const bpFill = parseFloat(document.getElementById('bp-fill').value) || 4;
+
+  const resultsEl = document.getElementById('bp-results');
+  const gridEl = document.getElementById('bp-grid');
+  const stepsEl = document.getElementById('bp-steps');
+
+  if (sourceRate <= 0 || targetRate <= 0 || bpFill <= 0) {
+    resultsEl.style.display = 'none';
+    return;
+  }
+
+  // Concentration ratio: how much more concentrated is the Z-Spray mix
+  const ratio = sourceRate / targetRate;
+  const mixNeeded = bpFill * ratio;
+  const waterToAdd = bpFill - mixNeeded;
+  const coverageSqFt = Math.round((bpFill / targetRate) * 1000);
+
+  resultsEl.style.display = 'block';
+
+  if (ratio >= 1) {
+    // Z-Spray mix is same concentration or more dilute — can't use it as-is at the target rate
+    // Actually if ratio > 1 it means source is more dilute (higher gal/1k = more water per 1k)
+    // Wait let me rethink: sourceRate = 0.5 gal/1k means products are mixed into 0.5 gal per 1k
+    // That means the mix is MORE concentrated (less water per 1k = higher product concentration)
+    // targetRate = 1 gal/1k means the backpack puts out more water per 1k
+    // ratio = 0.5/1 = 0.5, so mixNeeded = 4 * 0.5 = 2 gal from tank, 2 gal water
+    // If sourceRate = 1 and targetRate = 0.5, ratio = 2, mixNeeded = 8 gal... more than the fill
+    // That means the Z-Spray mix is too dilute — you'd need to add more product, not dilute
+  }
+
+  if (mixNeeded > bpFill) {
+    // Source is too dilute for the target rate
+    gridEl.innerHTML =
+      di('⚠ Cannot dilute', 'N/A', 'Source mix is too dilute for target rate', true) +
+      di('Source rate', sourceRate + ' gal/1k', 'more dilute than target') +
+      di('Target rate', targetRate + ' gal/1k', 'needs higher concentration');
+    stepsEl.innerHTML = '<div class="mix-step"><div class="mix-step-num">!</div><div class="mix-step-text">Your Z-Spray mix is <strong>less concentrated</strong> than what the backpack needs. You\'d need to add more product, not just water. Mix a fresh batch for the backpack at ' + targetRate + ' gal/1k.</div></div>';
+    return;
+  }
+
+  if (waterToAdd < 0.01) {
+    // Same concentration — just pour it straight
+    gridEl.innerHTML =
+      di('Pull from tank', bpFill.toFixed(1) + ' gal', 'Z-Spray mix, no dilution needed', true) +
+      di('Water to add', '0', 'same concentration') +
+      di('Coverage', coverageSqFt.toLocaleString(), 'sq ft at ' + targetRate + ' gal/1k');
+    stepsEl.innerHTML = '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Pour <strong>' + bpFill.toFixed(1) + ' gallons</strong> from Z-Spray tank directly into backpack. Same concentration — no dilution needed.</div></div>';
+    return;
+  }
+
+  // Normal case — dilute
+  const dilutionFactor = (1 / ratio).toFixed(1);
+  gridEl.innerHTML =
+    di('Pull from tank', mixNeeded.toFixed(1) + ' gal', 'Z-Spray mix', true) +
+    di('Add water', waterToAdd.toFixed(1) + ' gal', 'clean water', true) +
+    di('Total volume', bpFill.toFixed(1) + ' gal', 'in backpack') +
+    di('Coverage', coverageSqFt.toLocaleString() + ' sq ft', 'at ' + targetRate + ' gal/1k') +
+    di('Dilution', dilutionFactor + '×', sourceRate + ' → ' + targetRate + ' gal/1k');
+
+  let steps = '';
+  steps += '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Pull <strong>' + mixNeeded.toFixed(1) + ' gallons</strong> of mixed solution from your Z-Spray tank.</div></div>';
+  steps += '<div class="mix-step"><div class="mix-step-num">2</div><div class="mix-step-text">Pour into backpack sprayer.</div></div>';
+  steps += '<div class="mix-step"><div class="mix-step-num">3</div><div class="mix-step-text">Add <strong>' + waterToAdd.toFixed(1) + ' gallons</strong> of clean water to bring total to <strong>' + bpFill.toFixed(1) + ' gallons</strong>.</div></div>';
+  steps += '<div class="mix-step"><div class="mix-step-num">4</div><div class="mix-step-text">Agitate or shake to mix. Product concentration is now correct for <strong>' + targetRate + ' gal/1k</strong> delivery.</div></div>';
+  stepsEl.innerHTML = steps;
+
   saveState();
 }
 
