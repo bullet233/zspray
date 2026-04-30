@@ -661,8 +661,6 @@ function loadState() {
     // Mix products
     if (d.mixProducts && d.mixProducts.length > 0) {
       d.mixProducts.forEach(p => addMixProduct(p.name, p.rate, p.unit, p.form));
-    } else {
-      addMixProduct('', 1, 'oz_per_k', 'L');
     }
 
     // Set mix tank mode
@@ -681,7 +679,6 @@ function init() {
   const loaded = loadState();
   if (!loaded) {
     updateNozzles();
-    addMixProduct('', 1, 'oz_per_k', 'L');
     calcCal();
     calcMix();
   } else {
