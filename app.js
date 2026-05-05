@@ -33,6 +33,7 @@ function loadPresets() {
     presets = [...DEFAULT_PRESETS];
   }
   renderPresetDropdown();
+  renderXferPresetDropdown();
 }
 
 function savePresets() {
@@ -91,6 +92,7 @@ function deletePreset(idx) {
   presets.splice(idx, 1);
   savePresets();
   renderPresetDropdown();
+  renderXferPresetDropdown();
   renderPresetList();
 }
 
@@ -103,6 +105,7 @@ function saveNewPreset() {
   presets.push({ name, rate, unit, form });
   savePresets();
   renderPresetDropdown();
+  renderXferPresetDropdown();
   renderPresetList();
   // Clear form
   document.getElementById('new-preset-name').value = '';
@@ -480,6 +483,73 @@ function calcMix() {
   saveState();
 }
 
+// ─── Transfer Tab Products ───
+let xferProdId = 0;
+
+function addXferProduct(name, rate, unit, form) {
+  const id = 'xp' + (xferProdId++);
+  const div = document.createElement('div');
+  div.className = 'prod-row'; div.id = id;
+  div.innerHTML =
+    '<input type="text" class="pname" placeholder="Product name" value="' + (name || '') + '" oninput="calcDilution()">' +
+    '<input type="number" class="prate" min="0" step="0.25" value="' + (rate !== undefined ? rate : 1) + '" oninput="calcDilution()">' +
+    '<select class="punit" onchange="calcDilution()">' +
+      '<option value="oz_per_k"' + (unit === 'oz_per_k' || !unit ? ' selected' : '') + '>oz / 1,000 sqft</option>' +
+      '<option value="oz_per_gal"' + (unit === 'oz_per_gal' ? ' selected' : '') + '>oz / gal</option>' +
+    '</select>' +
+    '<select class="pform" onchange="calcDilution()" title="Formulation type">' +
+      '<option value="WP"' + (form === 'WP' ? ' selected' : '') + '>Wettable Powder</option>' +
+      '<option value="DF"' + (form === 'DF' ? ' selected' : '') + '>Dry Flowable</option>' +
+      '<option value="L"' + (form === 'L' || !form ? ' selected' : '') + '>Liquid / SC</option>' +
+      '<option value="EC"' + (form === 'EC' ? ' selected' : '') + '>Emulsifiable</option>' +
+      '<option value="SURF"' + (form === 'SURF' ? ' selected' : '') + '>Surfactant / Adj</option>' +
+    '</select>' +
+    '<button class="btn-x" onclick="removeXferProduct(\'' + id + '\')" title="Remove">×</button>';
+  document.getElementById('xfer-products').appendChild(div);
+  calcDilution();
+}
+
+function removeXferProduct(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+  calcDilution();
+}
+
+function getXferProducts() {
+  const rows = document.querySelectorAll('#xfer-products .prod-row');
+  const list = [];
+  rows.forEach(r => {
+    const name = r.querySelector('.pname').value.trim() || 'Product';
+    const rate = parseFloat(r.querySelector('.prate').value) || 0;
+    const unit = r.querySelector('.punit').value;
+    const form = r.querySelector('.pform').value;
+    if (rate > 0) list.push({ name, rate, unit, form });
+  });
+  return list;
+}
+
+function addXferFromPreset() {
+  const sel = document.getElementById('xfer-preset-select');
+  const idx = parseInt(sel.value);
+  if (isNaN(idx) || !presets[idx]) return;
+  const p = presets[idx];
+  addXferProduct(p.name, p.rate, p.unit, p.form);
+  sel.value = '';
+}
+
+function renderXferPresetDropdown() {
+  const sel = document.getElementById('xfer-preset-select');
+  sel.innerHTML = '<option value="">— Select a saved product —</option>';
+  const formLabels = { WP: 'Powder', DF: 'Dry Flow.', L: 'Liquid', EC: 'Emulsif.', SURF: 'Surfactant' };
+  presets.forEach((p, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    const unitLabel = p.unit === 'oz_per_k' ? 'oz/1k' : 'oz/gal';
+    opt.textContent = p.name + '  (' + p.rate + ' ' + unitLabel + ', ' + formLabels[p.form] + ')';
+    sel.appendChild(opt);
+  });
+}
+
 // ─── Transfer Calculator ───
 function calcDilution() {
   const sourceRate = parseFloat(document.getElementById('bp-source-rate').value) || 0.5;
@@ -533,12 +603,12 @@ function calcDilution() {
   }
 
   // sourceRate > targetRate → Source is LESS concentrated → need to boost with extra product
-  const products = getMixProducts();
+  const products = getXferProducts();
 
   if (products.length === 0) {
     gridEl.innerHTML =
-      di('⚠ Products needed', '—', 'Add products in the Tank Mix tab to calculate boost amounts', true);
-    stepsEl.innerHTML = '<div class="mix-step"><div class="mix-step-num">!</div><div class="mix-step-text">' + srcName + ' mix is <strong>less concentrated</strong> than ' + tgtName + ' needs. Add products in the Tank Mix tab so I can calculate how much extra to add.</div></div>';
+      di('⚠ Products needed', '—', 'Add products to Source Tank Contents above', true);
+    stepsEl.innerHTML = '<div class="mix-step"><div class="mix-step-num">!</div><div class="mix-step-text">' + srcName + ' mix is <strong>less concentrated</strong> than ' + tgtName + ' needs. Add your products to the <strong>Source Tank Contents</strong> card above so I can calculate how much extra to add.</div></div>';
     return;
   }
 
@@ -616,6 +686,18 @@ function saveState() {
         rate: r.querySelector('.prate').value,
         unit: r.querySelector('.punit').value,
         form: r.querySelector('.pform').value
+      })),
+      // Transfer tab
+      xferSourceName: document.getElementById('xfer-source-name').value,
+      xferSourceRate: document.getElementById('bp-source-rate').value,
+      xferTargetName: document.getElementById('xfer-target-name').value,
+      xferTargetRate: document.getElementById('bp-target-rate').value,
+      xferFill: document.getElementById('bp-fill').value,
+      xferProducts: [...document.querySelectorAll('#xfer-products .prod-row')].map(r => ({
+        name: r.querySelector('.pname').value,
+        rate: r.querySelector('.prate').value,
+        unit: r.querySelector('.punit').value,
+        form: r.querySelector('.pform').value
       }))
     };
     localStorage.setItem(STORE, JSON.stringify(data));
@@ -657,6 +739,16 @@ function loadState() {
 
     // Set mix tank mode
     if (d.mixTankMode !== undefined) setMixTank(d.mixTankMode === 'c' ? 'c' : parseInt(d.mixTankMode));
+
+    // Transfer tab
+    if (d.xferSourceName) document.getElementById('xfer-source-name').value = d.xferSourceName;
+    if (d.xferSourceRate) document.getElementById('bp-source-rate').value = d.xferSourceRate;
+    if (d.xferTargetName) document.getElementById('xfer-target-name').value = d.xferTargetName;
+    if (d.xferTargetRate) document.getElementById('bp-target-rate').value = d.xferTargetRate;
+    if (d.xferFill) document.getElementById('bp-fill').value = d.xferFill;
+    if (d.xferProducts && d.xferProducts.length > 0) {
+      d.xferProducts.forEach(p => addXferProduct(p.name, p.rate, p.unit, p.form));
+    }
 
     // Restore active tab
     if (d.activeTab) switchTab(d.activeTab);
