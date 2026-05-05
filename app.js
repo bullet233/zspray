@@ -217,43 +217,37 @@ function calcCal() {
 
   if (Math.abs(pctDiff) <= 5) {
     banner.className = 'status-banner good';
-    sTitle.textContent = '✓ On target — within 5%';
-    sBody.innerHTML = 'Your spray output is dialed in. Tank covers <strong>' + coverageSqFt.toLocaleString() + ' sq ft</strong>.';
+    sTitle.textContent = '✅ You\'re good to spray';
+    sBody.innerHTML = 'Your sprayer is putting out <strong>' + galPer1k.toFixed(3) + ' gal per 1,000 sq ft</strong> — that\'s within 5% of your <strong>' + target.toFixed(2) + '</strong> target. No changes needed.<br>One full tank will cover about <strong>' + coverageSqFt.toLocaleString() + ' sq ft</strong>.';
     sGrid.innerHTML =
-      di('Actual output', galPer1k.toFixed(3), 'gal / 1,000 sq ft', true) +
-      di('Target output', target.toFixed(2), 'gal / 1,000 sq ft') +
-      di('Tank size', tank + ' gal', 'filled to top') +
-      di('Tank covers', coverageSqFt.toLocaleString(), 'sq ft');
+      di('What you\'re putting down', galPer1k.toFixed(3) + ' gal', 'per 1,000 sq ft', true) +
+      di('What you wanted', target.toFixed(2) + ' gal', 'per 1,000 sq ft') +
+      di('Tank covers', coverageSqFt.toLocaleString() + ' sq ft', 'before refilling');
   } else if (pctDiff > 5) {
     banner.className = 'status-banner over';
-    sTitle.textContent = '▲ Over-applying by ' + ap + '%';
-    sBody.innerHTML = 'Applying <strong>' + agd + ' extra gal</strong> (' + aod + ' oz) per 1,000 sq ft — wasting ~<strong>' + extraGalPerTank.toFixed(1) + ' gal</strong> per tank.<br><strong>Fix:</strong> drive faster or reduce pressure. Target speed: <strong>' + targetSpeedMph.toFixed(2) + ' MPH</strong>.';
+    sTitle.textContent = '⚠️ Too much product — speed up';
+    sBody.innerHTML = 'You\'re putting down <strong>' + ap + '% more</strong> than you should. That wastes about <strong>' + extraGalPerTank.toFixed(1) + ' gal</strong> per tank and you\'ll run out sooner.' +
+      '<br><br><strong>👉 What to do:</strong> Drive faster — aim for about <strong>' + targetSpeedMph.toFixed(1) + ' MPH</strong> instead of your current ' + mph.toFixed(1) + ' MPH. Or turn down the pressure.';
     sGrid.innerHTML =
-      di('Actual output', galPer1k.toFixed(3), 'gal / 1,000 sq ft', true) +
-      di('Target output', target.toFixed(2), 'gal / 1,000 sq ft') +
-      di('Extra water / 1k', agd + ' gal', '(' + aod + ' oz) over target', true) +
-      di('% over target', '+' + ap + '%', 'above label rate') +
-      di('Actual coverage', coverageSqFt.toLocaleString(), 'sq ft per tank') +
-      di('Target coverage', targetCovSqFt.toLocaleString(), 'sq ft per tank') +
-      di('Coverage lost', Math.abs(covDiff).toLocaleString(), 'sq ft less than expected') +
-      di('Wasted carrier', extraGalPerTank.toFixed(1) + ' gal', 'per tank') +
-      di('Target speed', targetSpeedMph.toFixed(2) + ' MPH', 'to hit ' + target + ' gal/k');
+      di('You\'re putting down', galPer1k.toFixed(3) + ' gal', 'per 1,000 sq ft', true) +
+      di('You should be at', target.toFixed(2) + ' gal', 'per 1,000 sq ft') +
+      di('How far off', '+' + ap + '%', 'over target', true) +
+      di('Drive this fast', targetSpeedMph.toFixed(1) + ' MPH', 'to fix it') +
+      di('Tank covers', coverageSqFt.toLocaleString() + ' sq ft', 'should be ' + targetCovSqFt.toLocaleString());
   } else {
     banner.className = 'status-banner under';
-    sTitle.textContent = '▼ Under-applying by ' + ap + '%';
-    sBody.innerHTML = 'Applying <strong>' + agd + ' gal less</strong> (' + aod + ' oz short) per 1,000 sq ft — product may not perform as expected.<br><strong>Fix:</strong> slow down or increase pressure. Target speed: <strong>' + targetSpeedMph.toFixed(2) + ' MPH</strong>.';
+    sTitle.textContent = '⚠️ Not enough product — slow down';
+    sBody.innerHTML = 'You\'re putting down <strong>' + ap + '% less</strong> than you should. Products won\'t work as well because they\'re too diluted.' +
+      '<br><br><strong>👉 What to do:</strong> Slow down — aim for about <strong>' + targetSpeedMph.toFixed(1) + ' MPH</strong> instead of your current ' + mph.toFixed(1) + ' MPH. Or turn up the pressure.';
     sGrid.innerHTML =
-      di('Actual output', galPer1k.toFixed(3), 'gal / 1,000 sq ft', true) +
-      di('Target output', target.toFixed(2), 'gal / 1,000 sq ft') +
-      di('Short water / 1k', agd + ' gal', '(' + aod + ' oz) under target', true) +
-      di('% under target', '-' + ap + '%', 'below label rate') +
-      di('Actual coverage', coverageSqFt.toLocaleString(), 'sq ft per tank') +
-      di('Target coverage', targetCovSqFt.toLocaleString(), 'sq ft per tank') +
-      di('Extra coverage', Math.abs(covDiff).toLocaleString(), 'sq ft more (diluted)') +
-      di('Target speed', targetSpeedMph.toFixed(2) + ' MPH', 'to hit ' + target + ' gal/k');
+      di('You\'re putting down', galPer1k.toFixed(3) + ' gal', 'per 1,000 sq ft', true) +
+      di('You should be at', target.toFixed(2) + ' gal', 'per 1,000 sq ft') +
+      di('How far off', '-' + ap + '%', 'under target', true) +
+      di('Drive this fast', targetSpeedMph.toFixed(1) + ' MPH', 'to fix it') +
+      di('Tank covers', coverageSqFt.toLocaleString() + ' sq ft', 'should be ' + targetCovSqFt.toLocaleString());
   }
 
-  // Formula
+  // Formula (show the math for reference)
   const scaleNote = Math.abs(scaleFactor - 1) > 0.01
     ? '\nScaled  = ' + totalOz.toFixed(1) + ' oz × ' + scaleFactor.toFixed(3) + ' = ' + scaledOz.toFixed(1) + ' oz  (adjusted to exactly 1,000 sqft)' : '';
   document.getElementById('formula').textContent =
@@ -386,13 +380,13 @@ function calcMix() {
   if (isPartial) {
     fillInfo.style.display = 'block';
     fillInfo.className = 'fill-partial-note';
-    fillInfo.textContent = '⚡ Partial fill: ' + fill + ' of ' + tank + ' gal (' + Math.round(fill/tank*100) + '%) — products scaled down';
+    fillInfo.textContent = '⚡ You\'re only filling ' + fill + ' of ' + tank + ' gallons (' + Math.round(fill/tank*100) + '%) — product amounts are adjusted for this smaller fill.';
   } else {
     fillInfo.style.display = 'none';
   }
 
-  document.getElementById('mix-cov').textContent = coverageSqFt.toLocaleString() + ' sq ft';
-  document.getElementById('mix-tank-info').textContent = fill + ' gal ' + (isPartial ? '(partial) ' : '') + 'at ' + rate + ' gal/1k = ' + coverageSqFt.toLocaleString() + ' sq ft coverage';
+  document.getElementById('mix-cov').textContent = 'This fill covers about ' + coverageSqFt.toLocaleString() + ' sq ft';
+  document.getElementById('mix-tank-info').textContent = fill + ' gallons at ' + rate + ' gal/1k = about ' + coverageSqFt.toLocaleString() + ' sq ft of coverage';
 
   // Calculate product amounts based on fill, not full tank
   let prodDetails = [];
@@ -413,7 +407,7 @@ function calcMix() {
   document.getElementById('mix-r-rate').textContent = rate.toFixed(3);
   document.getElementById('mix-r-fill').textContent = fill;
   document.getElementById('mix-r-cov').textContent = coverageSqFt.toLocaleString();
-  document.getElementById('mix-r-prod').textContent = totalProdOz > 0 ? totalProdOz.toFixed(1) : '—';
+  document.getElementById('mix-r-prod').textContent = totalProdOz > 0 ? totalProdOz.toFixed(1) + ' oz' : '—';
 
   // Mixing instructions
   const mixPanel = document.getElementById('mix-panel');
@@ -432,39 +426,41 @@ function calcMix() {
     const initialFillGal = Math.max(fill * 0.5, fill - totalLiquidGal - 1);
 
     const partialLabel = isPartial ? ' (partial fill)' : '';
-    let summary = '<strong>Fill volume:</strong> ' + fill + ' gal' + partialLabel + ' &nbsp;|&nbsp; <strong>Total product:</strong> ' + totalProdOz.toFixed(1) + ' oz (' + totalLiquidGal.toFixed(2) + ' gal liquid)<br>';
-    summary += '<strong>Initial water fill:</strong> ~' + initialFillGal.toFixed(0) + ' gal &nbsp;|&nbsp; then add products &nbsp;|&nbsp; <strong>Top off to ' + fill + ' gal</strong>';
+    let summary = 'You\'re mixing <strong>' + fill + ' gallons' + partialLabel + '</strong> total. ';
+    summary += 'Start by filling the tank to about <strong>' + initialFillGal.toFixed(0) + ' gallons</strong> of water, ';
+    summary += 'add your products (totaling ' + totalProdOz.toFixed(1) + ' oz), ';
+    summary += 'then top off to <strong>' + fill + ' gallons</strong>.';
     document.getElementById('mix-summary').innerHTML = summary;
 
     let steps = '', stepNum = 1;
-    steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text">Fill tank to <strong>' + initialFillGal.toFixed(0) + ' gallons</strong> with clean water.</div></div>';
-    steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text"><strong>Start agitation</strong> — keep it running for the entire mixing process.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text">Put about <strong>' + initialFillGal.toFixed(0) + ' gallons</strong> of clean water in the tank.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text"><strong>Turn on the agitator</strong> and leave it running the whole time you\'re mixing.</div></div>';
 
     formOrder.forEach(f => {
       const prods = fullList.filter(p => p.form === f);
       if (prods.length === 0) return;
-      const prodList = prods.map(p => '<strong>' + p.actual + ' oz</strong> ' + p.name).join(', ');
+      const prodList = prods.map(p => '<strong>' + p.actual + ' oz</strong> of ' + p.name).join(', ');
       let note = '';
-      if (f === 'WP') note = ' Pre-mix with water in a bucket to make a slurry, then add slowly while agitating.';
-      else if (f === 'DF') note = ' Add slowly while agitating; let dissolve fully before next product.';
-      else if (f === 'L') note = ' Pour in slowly while agitating.';
-      else if (f === 'EC') note = ' Pour in slowly — these can foam.';
-      else if (f === 'SURF') note = ' Add LAST to prevent excessive foaming.';
-      steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text">Add <em>' + formNames[f] + '</em>: ' + prodList + '.' + note + '</div></div>';
+      if (f === 'WP') note = ' Mix it in a bucket with some water first to make a slurry, then pour it in slowly.';
+      else if (f === 'DF') note = ' Pour it in slowly and let it dissolve completely before adding the next product.';
+      else if (f === 'L') note = ' Pour in slowly while the agitator is running.';
+      else if (f === 'EC') note = ' Pour in slowly — this type can foam up.';
+      else if (f === 'SURF') note = ' Always add this one last so it doesn\'t foam up.';
+      steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text">Put in ' + prodList + '.' + note + '</div></div>';
     });
 
-    steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text">Top off with water to exactly <strong>' + fill + ' gallons</strong>.</div></div>';
-    steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text">Continue agitating for 2-3 minutes before spraying. Keep agitation on while spraying.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text">Fill the rest of the tank with water up to <strong>' + fill + ' gallons</strong> total.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">' + (stepNum++) + '</div><div class="mix-step-text">Let the agitator run for 2-3 more minutes, then you\'re ready to spray. Keep the agitator on while spraying.</div></div>';
     document.getElementById('mix-steps').innerHTML = steps;
 
     // Product summary cards
     let prodHTML = '';
     prodDetails.forEach(p => {
-      const rateLabel = p.rate + ' ' + (p.unit === 'oz_per_k' ? 'oz/1k' : 'oz/gal');
-      prodHTML += di(p.name, p.actual + ' oz', rateLabel);
+      const rateLabel = p.rate + ' ' + (p.unit === 'oz_per_k' ? 'oz per 1,000 sqft' : 'oz per gallon');
+      prodHTML += di('Put in ' + p.name, p.actual + ' oz', rateLabel);
     });
     document.getElementById('mix-prod-grid').innerHTML =
-      di('Total product', totalProdOz.toFixed(1) + ' oz', 'into ' + fill + ' gal water', true) + prodHTML;
+      di('Total product to add', totalProdOz.toFixed(1) + ' oz', 'into ' + fill + ' gal of water', true) + prodHTML;
 
     // Warnings
     const warnEl = document.getElementById('mix-warning');
@@ -573,9 +569,9 @@ function calcDilution() {
   // Same rate — just pour straight
   if (Math.abs(sourceRate - targetRate) < 0.001) {
     gridEl.innerHTML =
-      di('Pull from ' + srcName, bpFill.toFixed(1) + ' gal', 'no changes needed', true) +
-      di('Coverage', coverageSqFt.toLocaleString() + ' sq ft', 'at ' + targetRate + ' gal/1k');
-    stepsEl.innerHTML = '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Pour <strong>' + bpFill.toFixed(1) + ' gallons</strong> from ' + srcName + ' directly into ' + tgtName + '. Same rate — no adjustments needed.</div></div>';
+      di('Take from ' + srcName, bpFill.toFixed(1) + ' gal', 'pour it straight in', true) +
+      di('This will cover', coverageSqFt.toLocaleString() + ' sq ft', 'at ' + targetRate + ' gal/1k');
+    stepsEl.innerHTML = '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Just pour <strong>' + bpFill.toFixed(1) + ' gallons</strong> from the ' + srcName + ' right into the ' + tgtName + '. Both sprayers run the same rate so nothing needs to change.</div></div>';
     return;
   }
 
@@ -584,20 +580,18 @@ function calcDilution() {
     const ratio = sourceRate / targetRate;
     const mixNeeded = bpFill * ratio;
     const waterToAdd = bpFill - mixNeeded;
-    const dilutionFactor = (targetRate / sourceRate).toFixed(1);
 
     gridEl.innerHTML =
-      di('Pull from ' + srcName, mixNeeded.toFixed(1) + ' gal', srcName + ' mix', true) +
-      di('Add water', waterToAdd.toFixed(1) + ' gal', 'clean water', true) +
-      di('Total in ' + tgtName, bpFill.toFixed(1) + ' gal', '') +
-      di('Coverage', coverageSqFt.toLocaleString() + ' sq ft', 'at ' + targetRate + ' gal/1k') +
-      di('Dilution', dilutionFactor + '×', sourceRate + ' → ' + targetRate + ' gal/1k');
+      di('Take from ' + srcName, mixNeeded.toFixed(1) + ' gal', 'of the mixed solution', true) +
+      di('Add water', waterToAdd.toFixed(1) + ' gal', 'plain clean water', true) +
+      di('Total in ' + tgtName, bpFill.toFixed(1) + ' gal', 'ready to spray') +
+      di('This will cover', coverageSqFt.toLocaleString() + ' sq ft', 'at ' + targetRate + ' gal/1k');
 
     let steps = '';
-    steps += '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Pull <strong>' + mixNeeded.toFixed(1) + ' gallons</strong> of mixed solution from ' + srcName + '.</div></div>';
-    steps += '<div class="mix-step"><div class="mix-step-num">2</div><div class="mix-step-text">Pour into ' + tgtName + '.</div></div>';
-    steps += '<div class="mix-step"><div class="mix-step-num">3</div><div class="mix-step-text">Add <strong>' + waterToAdd.toFixed(1) + ' gallons</strong> of clean water to bring total to <strong>' + bpFill.toFixed(1) + ' gallons</strong>.</div></div>';
-    steps += '<div class="mix-step"><div class="mix-step-num">4</div><div class="mix-step-text">Agitate or shake. Concentration is now correct for <strong>' + targetRate + ' gal/1k</strong> delivery.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Take <strong>' + mixNeeded.toFixed(1) + ' gallons</strong> of the mixed solution out of the ' + srcName + '.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">2</div><div class="mix-step-text">Pour it into the ' + tgtName + '.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">3</div><div class="mix-step-text">Add <strong>' + waterToAdd.toFixed(1) + ' gallons</strong> of clean water so the ' + tgtName + ' has <strong>' + bpFill.toFixed(1) + ' gallons</strong> total.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">4</div><div class="mix-step-text">Shake or agitate to mix it up. You\'re good to spray — products are at the right strength for the ' + tgtName + '.</div></div>';
     stepsEl.innerHTML = steps;
     return;
   }
@@ -607,14 +601,13 @@ function calcDilution() {
 
   if (products.length === 0) {
     gridEl.innerHTML =
-      di('⚠ Products needed', '—', 'Add products to Source Tank Contents above', true);
-    stepsEl.innerHTML = '<div class="mix-step"><div class="mix-step-num">!</div><div class="mix-step-text">' + srcName + ' mix is <strong>less concentrated</strong> than ' + tgtName + ' needs. Add your products to the <strong>Source Tank Contents</strong> card above so I can calculate how much extra to add.</div></div>';
+      di('⚠ Need your products', '—', 'Add them in Source Tank Contents above', true);
+    stepsEl.innerHTML = '<div class="mix-step"><div class="mix-step-num">!</div><div class="mix-step-text">The ' + srcName + ' mix isn\'t strong enough for the ' + tgtName + '. I need to know what products are in the tank to tell you how much extra to add. Fill in the <strong>Source Tank Contents</strong> section above.</div></div>';
     return;
   }
 
   const coverageInMix = (bpFill / sourceRate) * 1000;
   const coverageNeeded = (bpFill / targetRate) * 1000;
-  const boostFactor = sourceRate / targetRate;
 
   let boostDetails = [];
   let totalExtraOz = 0;
@@ -631,29 +624,28 @@ function calcDilution() {
   });
 
   let gridHTML =
-    di('Pull from ' + srcName, bpFill.toFixed(1) + ' gal', srcName + ' mix (all of it)', true) +
-    di('Add water', '0 gal', 'no extra water') +
-    di('Coverage', coverageSqFt.toLocaleString() + ' sq ft', 'at ' + targetRate + ' gal/1k') +
-    di('Boost factor', boostFactor.toFixed(1) + '×', sourceRate + ' → ' + targetRate + ' gal/1k');
+    di('Take from ' + srcName, bpFill.toFixed(1) + ' gal', 'all of it goes in', true) +
+    di('Add water', 'None', 'don\'t add any water') +
+    di('This will cover', coverageSqFt.toLocaleString() + ' sq ft', 'at ' + targetRate + ' gal/1k');
 
   if (boostDetails.length > 0) {
-    gridHTML += di('Extra product', totalExtraOz.toFixed(1) + ' oz', 'add to ' + tgtName, true);
+    gridHTML += di('Extra product to add', totalExtraOz.toFixed(1) + ' oz total', 'to make it strong enough', true);
     boostDetails.forEach(b => {
-      gridHTML += di('+ ' + b.name, b.extra + ' oz', 'extra (' + b.rate + ' ' + b.unit + ')');
+      gridHTML += di('Add more ' + b.name, b.extra + ' oz', 'on top of what\'s already in there');
     });
   }
   gridEl.innerHTML = gridHTML;
 
   let steps = '';
-  steps += '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Pull <strong>' + bpFill.toFixed(1) + ' gallons</strong> of mixed solution from ' + srcName + ' into ' + tgtName + '.</div></div>';
+  steps += '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Take <strong>' + bpFill.toFixed(1) + ' gallons</strong> of the mixed solution from the ' + srcName + ' and pour it into the ' + tgtName + '.</div></div>';
 
   if (boostDetails.length > 0) {
-    const prodList = boostDetails.map(b => '<strong>' + b.extra + ' oz</strong> ' + b.name).join(', ');
-    steps += '<div class="mix-step"><div class="mix-step-num">2</div><div class="mix-step-text">Add extra product to ' + tgtName + ': ' + prodList + '.</div></div>';
-    steps += '<div class="mix-step"><div class="mix-step-num">3</div><div class="mix-step-text">Agitate or shake well to dissolve.</div></div>';
-    steps += '<div class="mix-step"><div class="mix-step-num">4</div><div class="mix-step-text">Concentration is now correct for <strong>' + targetRate + ' gal/1k</strong> delivery. <em>Note: oz/gal products (surfactants) don\'t need adjustment.</em></div></div>';
+    const prodList = boostDetails.map(b => '<strong>' + b.extra + ' oz</strong> of ' + b.name).join(', ');
+    steps += '<div class="mix-step"><div class="mix-step-num">2</div><div class="mix-step-text">Now add extra product to the ' + tgtName + ': ' + prodList + '. This makes up for the ' + tgtName + ' needing a stronger mix.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">3</div><div class="mix-step-text">Shake or agitate the ' + tgtName + ' well so everything dissolves.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">4</div><div class="mix-step-text">You\'re good to spray. The ' + tgtName + ' is now at the right strength for <strong>' + targetRate + ' gal/1k</strong>.</div></div>';
   } else {
-    steps += '<div class="mix-step"><div class="mix-step-num">2</div><div class="mix-step-text">No extra product needed — your products are all oz/gal based and don\'t change with output rate.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">2</div><div class="mix-step-text">No extra product needed. Your products are measured per gallon, so they\'re already at the right strength.</div></div>';
   }
 
   stepsEl.innerHTML = steps;

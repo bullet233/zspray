@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zspray-v2';
+const CACHE_NAME = 'zspray-v3';
 const ASSETS = [
   './',
   './index.html',
