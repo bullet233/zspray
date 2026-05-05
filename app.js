@@ -120,6 +120,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === tab));
   if (tab === 'mix') syncMixFromCal();
   if (tab === 'xfer') calcDilution();
+  if (tab === 'gran') calcGranular();
   saveState();
 }
 
@@ -652,6 +653,70 @@ function calcDilution() {
   saveState();
 }
 
+// ─── Granular Calculator ───
+function calcGranular() {
+  const name = document.getElementById('gran-name').value.trim() || 'Product';
+  const rate = parseFloat(document.getElementById('gran-rate').value) || 0;
+  const area = parseFloat(document.getElementById('gran-area').value) || 0;
+  const bagSize = parseFloat(document.getElementById('gran-bag').value) || 50;
+  const hopperCap = parseFloat(document.getElementById('gran-hopper').value) || 100;
+
+  const resultsEl = document.getElementById('gran-results');
+  const summaryEl = document.getElementById('gran-summary');
+  const gridEl = document.getElementById('gran-grid');
+
+  if (rate <= 0 || area <= 0) {
+    resultsEl.style.display = 'none';
+    return;
+  }
+
+  const lbsNeeded = (area / 1000) * rate;
+  const bagsNeeded = lbsNeeded / bagSize;
+  const fullBags = Math.floor(bagsNeeded);
+  const partialBagLbs = Math.round((bagsNeeded - fullBags) * bagSize * 10) / 10;
+  const hopperLoads = Math.ceil(lbsNeeded / hopperCap);
+  const areaPerHopper = Math.round(hopperCap / rate * 1000);
+  const lbsPerLoad = Math.min(lbsNeeded, hopperCap);
+
+  resultsEl.style.display = 'block';
+
+  // Plain English summary
+  let summary = '';
+  if (lbsNeeded <= hopperCap) {
+    summary = 'Put <strong>' + lbsNeeded.toFixed(1) + ' lbs</strong> of ' + name + ' in the hopper. ';
+    summary += 'That\'s enough to cover your <strong>' + area.toLocaleString() + ' sq ft</strong> in one load.';
+  } else {
+    summary = 'You need <strong>' + lbsNeeded.toFixed(1) + ' lbs</strong> of ' + name + ' total for <strong>' + area.toLocaleString() + ' sq ft</strong>. ';
+    summary += 'That\'s <strong>' + hopperLoads + ' hopper loads</strong> — fill the hopper to <strong>' + hopperCap + ' lbs</strong> each time. ';
+    summary += 'Each full hopper covers about <strong>' + areaPerHopper.toLocaleString() + ' sq ft</strong>.';
+  }
+  summaryEl.innerHTML = summary;
+
+  // Results grid
+  let gridHTML =
+    di('Product to put down', lbsNeeded.toFixed(1) + ' lbs', 'of ' + name, true) +
+    di('Area you\'re covering', area.toLocaleString() + ' sq ft', 'at ' + rate + ' lbs/1k') +
+    di('Hopper loads', hopperLoads + '', hopperLoads === 1 ? 'just one fill' : hopperCap + ' lbs each');
+
+  if (bagSize > 0) {
+    if (fullBags > 0 && partialBagLbs > 0) {
+      gridHTML += di('Bags needed', fullBags + ' full + ' + partialBagLbs + ' lbs', bagSize + ' lb bags');
+    } else if (fullBags > 0) {
+      gridHTML += di('Bags needed', fullBags + ' full', bagSize + ' lb bags');
+    } else {
+      gridHTML += di('From one bag', lbsNeeded.toFixed(1) + ' lbs', 'out of a ' + bagSize + ' lb bag');
+    }
+  }
+
+  if (hopperLoads > 1) {
+    const lastLoadLbs = Math.round((lbsNeeded - (hopperLoads - 1) * hopperCap) * 10) / 10;
+    gridHTML += di('Last hopper load', lastLoadLbs + ' lbs', 'don\'t overfill');
+  }
+
+  gridEl.innerHTML = gridHTML;
+  saveState();
+}
+
 // ─── Persistence ───
 function saveState() {
   try {
@@ -690,7 +755,13 @@ function saveState() {
         rate: r.querySelector('.prate').value,
         unit: r.querySelector('.punit').value,
         form: r.querySelector('.pform').value
-      }))
+      })),
+      // Granular tab
+      granName: document.getElementById('gran-name').value,
+      granRate: document.getElementById('gran-rate').value,
+      granArea: document.getElementById('gran-area').value,
+      granBag: document.getElementById('gran-bag').value,
+      granHopper: document.getElementById('gran-hopper').value
     };
     localStorage.setItem(STORE, JSON.stringify(data));
   } catch (e) { /* silently fail */ }
@@ -741,6 +812,13 @@ function loadState() {
     if (d.xferProducts && d.xferProducts.length > 0) {
       d.xferProducts.forEach(p => addXferProduct(p.name, p.rate, p.unit, p.form));
     }
+
+    // Granular tab
+    if (d.granName) document.getElementById('gran-name').value = d.granName;
+    if (d.granRate) document.getElementById('gran-rate').value = d.granRate;
+    if (d.granArea) document.getElementById('gran-area').value = d.granArea;
+    if (d.granBag) document.getElementById('gran-bag').value = d.granBag;
+    if (d.granHopper) document.getElementById('gran-hopper').value = d.granHopper;
 
     // Restore active tab
     if (d.activeTab) switchTab(d.activeTab);
