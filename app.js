@@ -116,6 +116,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === tab));
   if (tab === 'mix') syncMixFromCal();
+  if (tab === 'xfer') calcDilution();
   saveState();
 }
 
@@ -476,17 +477,16 @@ function calcMix() {
     if (mixResultsCard) mixResultsCard.style.display = 'none';
     document.getElementById('mix-prod-grid').innerHTML = '';
   }
-  // Sync backpack source rate from current mix rate
-  document.getElementById('bp-source-rate').value = rate;
-  calcDilution();
   saveState();
 }
 
-// ─── Backpack Dilution ───
+// ─── Transfer Calculator ───
 function calcDilution() {
   const sourceRate = parseFloat(document.getElementById('bp-source-rate').value) || 0.5;
   const targetRate = parseFloat(document.getElementById('bp-target-rate').value) || 1;
   const bpFill = parseFloat(document.getElementById('bp-fill').value) || 4;
+  const srcName = document.getElementById('xfer-source-name').value.trim() || 'Source';
+  const tgtName = document.getElementById('xfer-target-name').value.trim() || 'Target';
 
   const resultsEl = document.getElementById('bp-results');
   const gridEl = document.getElementById('bp-grid');
@@ -503,13 +503,13 @@ function calcDilution() {
   // Same rate — just pour straight
   if (Math.abs(sourceRate - targetRate) < 0.001) {
     gridEl.innerHTML =
-      di('Pull from tank', bpFill.toFixed(1) + ' gal', 'Z-Spray mix, no changes needed', true) +
+      di('Pull from ' + srcName, bpFill.toFixed(1) + ' gal', 'no changes needed', true) +
       di('Coverage', coverageSqFt.toLocaleString() + ' sq ft', 'at ' + targetRate + ' gal/1k');
-    stepsEl.innerHTML = '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Pour <strong>' + bpFill.toFixed(1) + ' gallons</strong> from Z-Spray tank directly into backpack. Same rate — no adjustments needed.</div></div>';
+    stepsEl.innerHTML = '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Pour <strong>' + bpFill.toFixed(1) + ' gallons</strong> from ' + srcName + ' directly into ' + tgtName + '. Same rate — no adjustments needed.</div></div>';
     return;
   }
 
-  // sourceRate < targetRate → Z-Spray mix is MORE concentrated → dilute with water
+  // sourceRate < targetRate → Source is MORE concentrated → dilute with water
   if (sourceRate < targetRate) {
     const ratio = sourceRate / targetRate;
     const mixNeeded = bpFill * ratio;
@@ -517,42 +517,34 @@ function calcDilution() {
     const dilutionFactor = (targetRate / sourceRate).toFixed(1);
 
     gridEl.innerHTML =
-      di('Pull from tank', mixNeeded.toFixed(1) + ' gal', 'Z-Spray mix', true) +
+      di('Pull from ' + srcName, mixNeeded.toFixed(1) + ' gal', srcName + ' mix', true) +
       di('Add water', waterToAdd.toFixed(1) + ' gal', 'clean water', true) +
-      di('Total volume', bpFill.toFixed(1) + ' gal', 'in backpack') +
+      di('Total in ' + tgtName, bpFill.toFixed(1) + ' gal', '') +
       di('Coverage', coverageSqFt.toLocaleString() + ' sq ft', 'at ' + targetRate + ' gal/1k') +
       di('Dilution', dilutionFactor + '×', sourceRate + ' → ' + targetRate + ' gal/1k');
 
     let steps = '';
-    steps += '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Pull <strong>' + mixNeeded.toFixed(1) + ' gallons</strong> of mixed solution from your Z-Spray tank.</div></div>';
-    steps += '<div class="mix-step"><div class="mix-step-num">2</div><div class="mix-step-text">Pour into backpack sprayer.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Pull <strong>' + mixNeeded.toFixed(1) + ' gallons</strong> of mixed solution from ' + srcName + '.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">2</div><div class="mix-step-text">Pour into ' + tgtName + '.</div></div>';
     steps += '<div class="mix-step"><div class="mix-step-num">3</div><div class="mix-step-text">Add <strong>' + waterToAdd.toFixed(1) + ' gallons</strong> of clean water to bring total to <strong>' + bpFill.toFixed(1) + ' gallons</strong>.</div></div>';
     steps += '<div class="mix-step"><div class="mix-step-num">4</div><div class="mix-step-text">Agitate or shake. Concentration is now correct for <strong>' + targetRate + ' gal/1k</strong> delivery.</div></div>';
     stepsEl.innerHTML = steps;
     return;
   }
 
-  // sourceRate > targetRate → Z-Spray mix is LESS concentrated → need to boost with extra product
-  // Pull full bpFill from tank, then add extra product to concentrate
+  // sourceRate > targetRate → Source is LESS concentrated → need to boost with extra product
   const products = getMixProducts();
 
   if (products.length === 0) {
     gridEl.innerHTML =
-      di('⚠ Products needed', '—', 'Add products above to calculate boost amounts', true);
-    stepsEl.innerHTML = '<div class="mix-step"><div class="mix-step-num">!</div><div class="mix-step-text">Your Z-Spray mix is <strong>less concentrated</strong> than the backpack needs. Add products to the mix above so I can calculate how much extra to add.</div></div>';
+      di('⚠ Products needed', '—', 'Add products in the Tank Mix tab to calculate boost amounts', true);
+    stepsEl.innerHTML = '<div class="mix-step"><div class="mix-step-num">!</div><div class="mix-step-text">' + srcName + ' mix is <strong>less concentrated</strong> than ' + tgtName + ' needs. Add products in the Tank Mix tab so I can calculate how much extra to add.</div></div>';
     return;
   }
 
-  // For each oz/1k product: 
-  //   In bpFill gal of Z-Spray mix, you have: (bpFill/sourceRate) × 1000 sq ft worth = (bpFill/sourceRate) × rate oz
-  //   Backpack covers: (bpFill/targetRate) × 1000 sq ft
-  //   Need: (bpFill/targetRate) × rate oz for oz/1k products
-  //   Extra = need - have
-  // For oz/gal products: concentration per gallon is the same regardless, no extra needed
-
-  const coverageInMix = (bpFill / sourceRate) * 1000;   // sq ft worth of product in the pulled mix
-  const coverageNeeded = (bpFill / targetRate) * 1000;   // sq ft the backpack will cover
-  const boostFactor = (targetRate > 0 ? sourceRate / targetRate : 1);
+  const coverageInMix = (bpFill / sourceRate) * 1000;
+  const coverageNeeded = (bpFill / targetRate) * 1000;
+  const boostFactor = sourceRate / targetRate;
 
   let boostDetails = [];
   let totalExtraOz = 0;
@@ -566,17 +558,16 @@ function calcDilution() {
         totalExtraOz += extraOz;
       }
     }
-    // oz_per_gal products don't need adjustment — same oz per gallon of liquid
   });
 
   let gridHTML =
-    di('Pull from tank', bpFill.toFixed(1) + ' gal', 'Z-Spray mix (all of it)', true) +
-    di('Add water', '0 gal', 'no water needed') +
+    di('Pull from ' + srcName, bpFill.toFixed(1) + ' gal', srcName + ' mix (all of it)', true) +
+    di('Add water', '0 gal', 'no extra water') +
     di('Coverage', coverageSqFt.toLocaleString() + ' sq ft', 'at ' + targetRate + ' gal/1k') +
     di('Boost factor', boostFactor.toFixed(1) + '×', sourceRate + ' → ' + targetRate + ' gal/1k');
 
   if (boostDetails.length > 0) {
-    gridHTML += di('Extra product', totalExtraOz.toFixed(1) + ' oz', 'add to backpack', true);
+    gridHTML += di('Extra product', totalExtraOz.toFixed(1) + ' oz', 'add to ' + tgtName, true);
     boostDetails.forEach(b => {
       gridHTML += di('+ ' + b.name, b.extra + ' oz', 'extra (' + b.rate + ' ' + b.unit + ')');
     });
@@ -584,18 +575,19 @@ function calcDilution() {
   gridEl.innerHTML = gridHTML;
 
   let steps = '';
-  steps += '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Pull <strong>' + bpFill.toFixed(1) + ' gallons</strong> of mixed solution from your Z-Spray tank into the backpack.</div></div>';
+  steps += '<div class="mix-step"><div class="mix-step-num">1</div><div class="mix-step-text">Pull <strong>' + bpFill.toFixed(1) + ' gallons</strong> of mixed solution from ' + srcName + ' into ' + tgtName + '.</div></div>';
 
   if (boostDetails.length > 0) {
     const prodList = boostDetails.map(b => '<strong>' + b.extra + ' oz</strong> ' + b.name).join(', ');
-    steps += '<div class="mix-step"><div class="mix-step-num">2</div><div class="mix-step-text">Add extra product: ' + prodList + '.</div></div>';
-    steps += '<div class="mix-step"><div class="mix-step-num">3</div><div class="mix-step-text">Agitate or shake well to dissolve the extra product.</div></div>';
-    steps += '<div class="mix-step"><div class="mix-step-num">4</div><div class="mix-step-text">Product concentration is now correct for <strong>' + targetRate + ' gal/1k</strong> delivery. <em>Note: oz/gal products (surfactants) don\'t need adjustment.</em></div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">2</div><div class="mix-step-text">Add extra product to ' + tgtName + ': ' + prodList + '.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">3</div><div class="mix-step-text">Agitate or shake well to dissolve.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">4</div><div class="mix-step-text">Concentration is now correct for <strong>' + targetRate + ' gal/1k</strong> delivery. <em>Note: oz/gal products (surfactants) don\'t need adjustment.</em></div></div>';
   } else {
-    steps += '<div class="mix-step"><div class="mix-step-num">2</div><div class="mix-step-text">No extra product needed — your current products are all oz/gal based and don\'t change with output rate.</div></div>';
+    steps += '<div class="mix-step"><div class="mix-step-num">2</div><div class="mix-step-text">No extra product needed — your products are all oz/gal based and don\'t change with output rate.</div></div>';
   }
 
   stepsEl.innerHTML = steps;
+  saveState();
 }
 
 // ─── Persistence ───
